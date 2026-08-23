@@ -1,0 +1,39 @@
+=== fm-ensure-agents-md.sh --help ===
+usage: fm-ensure-agents-md.sh [repo-or-worktree-dir]
+
+Ensure the worktree follows the agent-memory convention: AGENTS.md is the
+real memory file and CLAUDE.md is a two-line @AGENTS.md pointer. When only a
+real CLAUDE.md exists, its content is relocated, never removed: every line
+moves into AGENTS.md and the original CLAUDE.md becomes the pointer.
+Promotion appends the canonical "## Maintaining this file" section to AGENTS.md
+and replaces the real CLAUDE.md with the two-line pointer; anticipate those
+root-file changes before running this in a project whose CI gates check doc
+placement or a doc budget.
+Refuses to clobber distinct real files or wrong symlinks.
+
+=== Promotion end-to-end (relocate, never remove) ===
+--- BEFORE: CLAUDE.md (3 content lines + trailing newline) ---
+# Alpha notes
+
+- Run make test
+- Deploy with kubectl
+--- RUN: ./bin/fm-ensure-agents-md.sh <repo> ---
+promoted: moved CLAUDE.md to AGENTS.md and wrote CLAUDE.md @AGENTS.md pointer in /private/var/folders/y_/9gbx7zj559ddcnld9h975dph0000gn/T/tmp.Mg8sLVHcDz
+--- AFTER: AGENTS.md (all 3 content lines preserved + appended section) ---
+# Alpha notes
+
+- Run make test
+- Deploy with kubectl
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.
+--- AFTER: CLAUDE.md (shrunk to the 2-line pointer) ---
+<!-- Points Claude at AGENTS.md via import; edit AGENTS.md, not this file. -->
+@AGENTS.md
+--- line counts ---
+AGENTS.md:       11 lines
+CLAUDE.md:        2 lines
