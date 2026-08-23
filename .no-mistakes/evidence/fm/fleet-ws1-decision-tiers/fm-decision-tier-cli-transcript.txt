@@ -1,0 +1,61 @@
+$ bin/fm-decision-tier.sh classify merge
+hard-stop
+
+$ bin/fm-decision-tier.sh classify precedent-match
+auto
+
+$ bin/fm-decision-tier.sh classify some-new-category-nobody-registered   # fails closed
+hard-stop
+
+# --- auto tier: firstmate acts and logs it, no captain involvement ---
+$ bin/fm-decision-tier.sh auto --now 1000 "$LOG" dec-auto-1 precedent-match "matched sibling ruling from dec-0"
+(exit 0)
+
+# --- a caller cannot mis-tier a decision: logging a merge as auto is refused ---
+$ bin/fm-decision-tier.sh auto --now 1000 "$LOG" dec-bad merge "should be refused"
+fm-decision-tier-lib: category merge classifies hard-stop, not auto; refusing
+(exit 1)
+
+# --- hard-stop tier: merges always escalate, unconditionally ---
+$ bin/fm-decision-tier.sh hard-stop --now 1000 "$LOG" dec-hard-1 merge "attempted merge, escalated per hard rule"
+(exit 0)
+
+# --- default-with-veto tier: a stated recommendation + default + window ---
+$ bin/fm-decision-tier.sh open --now 1000 "$LOG" dec-veto-1 two-option-tradeoff 300 "prefer option A" "apply option A"
+(exit 0)
+
+$ bin/fm-decision-tier.sh status --now 1100 "$LOG" dec-veto-1   # inside the 300s window
+pending
+
+$ bin/fm-decision-tier.sh status --now 1301 "$LOG" dec-veto-1   # window elapsed, no captain veto -> expires into action
+expired
+
+# --- a second default-veto decision, this time the captain vetoes in time ---
+$ bin/fm-decision-tier.sh open --now 1000 "$LOG" dec-veto-2 process-default 300 "prefer routine default" "apply routine default"
+(exit 0)
+$ bin/fm-decision-tier.sh veto --now 1100 "$LOG" dec-veto-2 "captain overrides the default"
+(exit 0)
+$ bin/fm-decision-tier.sh status --now 5000 "$LOG" dec-veto-2   # stays vetoed long after the window would have elapsed
+vetoed
+
+$ bin/fm-decision-tier.sh veto --now 5000 "$LOG" dec-veto-1 "too late objection"   # window already expired, veto refused
+fm-decision-tier-lib: cannot veto id dec-veto-1: status is expired, not pending
+(exit 1)
+
+# --- a session's escalation count is a reported, measurable quantity ---
+$ bin/fm-decision-tier.sh report --now 5000 "$LOG"
+total=4
+auto=1
+default_pending=0
+default_expired=1
+default_vetoed=1
+hard_stop=1
+escalation_count=1
+
+# --- raw decision log on disk (the persisted state this all derives from) ---
+$ cat "$LOG"
+1000	dec-auto-1	precedent-match	auto	acted				matched sibling ruling from dec-0
+1000	dec-hard-1	merge	hard-stop	escalated				attempted merge, escalated per hard rule
+1000	dec-veto-1	two-option-tradeoff	default-veto	opened	300	prefer option A	apply option A	
+1000	dec-veto-2	process-default	default-veto	opened	300	prefer routine default	apply routine default	
+1100	dec-veto-2	process-default	default-veto	vetoed				captain overrides the default
