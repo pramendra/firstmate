@@ -1,0 +1,16 @@
+== baseline: guard green on unmutated fixture
+fm-delivery-mode-check: ok sites=6 modes=4
+exit=0
+
+== drift 1a: registered site fm-brief.sh arm drops local-only
+368:  local-only)
+fm-delivery-mode-check: bin/fm-brief.sh: registry declares {direct-PR|local-only|no-mistakes} but the file's case arm actually accepts {direct-PR|no-mistakes}
+exit=1
+
+== drift 1b: registered site loses its case arm entirely (arm deleted)
+fm-delivery-mode-check: bin/fm-brief.sh: registry declares {direct-PR|local-only|no-mistakes} but the file's case arm actually accepts {direct-PR|no-mistakes}; bin/fm-remote-home-seed.sh: registry declares {direct-PR|no-mistakes} but no matching case arm exists in the file
+exit=1
+
+== drift 2: new unregistered closed-set site appears in a 7th script
+fm-delivery-mode-check: closed-set case arm found in a file the registry does not mention: bin/fm-new-site.sh declares {direct-PR|local-only|no-mistakes}
+exit=1
