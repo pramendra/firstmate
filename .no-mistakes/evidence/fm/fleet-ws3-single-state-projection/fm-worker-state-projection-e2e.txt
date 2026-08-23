@@ -1,0 +1,27 @@
+Manual end-to-end verification: bin/fm-crew-state.sh and bin/fm-peek.sh reading the
+shared bin/fm-worker-state-lib.sh projection for the same worker at the same instant.
+
+Setup: a scratch git worktree + firstmate state dir with a fake tmux (pane idle text)
+and a busy semantic record armed/applied via bin/fm-busy-event.sh (source claude-hook).
+
+=== fm-crew-state.sh stdout (thin renderer over shared projection) ===
+state: working · source: pane · harness busy (claude-hook)
+
+=== fm-peek.sh: stdout (raw pane tail, unchanged) vs stderr (projection annotation) ===
+--- peek stdout ---
+all quiet
+>
+
+--- peek stderr (state annotation line) ---
+state: working · source: pane · harness busy (claude-hook)
+
+=== Byte-identical check ===
+MATCH: crew-state and peek agree exactly -> 'state: working · source: pane · harness busy (claude-hook)'
+
+Observations:
+- fm-peek.sh's stdout is the raw pane tail only ("all quiet\n> \n") - unchanged shape,
+  no projection text mixed in, confirming stdout stays byte-identical for programmatic callers.
+- fm-peek.sh's stderr carries the same "state: ... source: ... detail" line that
+  fm-crew-state.sh prints on stdout, produced by the same fm_worker_state_project /
+  fm_worker_state_render_line functions in bin/fm-worker-state-lib.sh - the two
+  surfaces cannot structurally disagree because they render one shared computation.
