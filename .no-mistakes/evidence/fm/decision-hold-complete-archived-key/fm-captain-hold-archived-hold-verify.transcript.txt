@@ -1,0 +1,29 @@
+fm-captain-hold: archived, answered hold satisfies the completion gate (real parked lane)
+
+Scenario reproduced from user intent: FM_HOME=/Users/pramendra/.firstmate
+identity new-tag-4-report-88-91-decision-ada-premise-unverified is present in
+data/done-archive.md (line 2834, done 2026-08-26, kind captain, body carries
+"Resolution recorded by fm-decision-hold." / "Resolution mode: answered") and
+absent from data/backlog.md. The lane's status log records the parking defect:
+"blocked: decision-hold-lifecycle completion gate ... fails with 'captain decision
+new-tag-4-report-88-91-decision-ada-premise-unverified is absent from backlog.md'".
+
+PRE-FIX script (base commit 60bedde), read-only verify on the real lane:
+$ FM_HOME=/Users/pramendra/.firstmate bin/fm-captain-hold.sh verify new-tag-4-report-88-91
+fm-captain-hold: no captain-held task ada-premise-unverified and no legacy identity new-tag-4-report-88-91-decision-ada-premise-unverified in /Users/pramendra/.firstmate/data/backlog.md
+fm-captain-hold: captain-held task  is absent from /Users/pramendra/.firstmate/data/backlog.md
+exit=1
+
+FIXED script (HEAD dae8ffb), same read-only verify on the real lane:
+$ FM_HOME=/Users/pramendra/.firstmate bin/fm-captain-hold.sh verify new-tag-4-report-88-91
+verified: new-tag-4-report-88-91 captain-call inventory
+exit=0
+
+FIXED script, archived replay with a different decision (read-only):
+$ FM_HOME=/Users/pramendra/.firstmate bin/fm-captain-hold.sh answer new-tag-4-report-88-91-decision-ada-premise-unverified --decision-file /tmp/real-mismatch.txt
+fm-captain-hold: task new-tag-4-report-88-91-decision-ada-premise-unverified is archived and records a different captain decision
+exit=1
+
+All three commands are read-only: verify reads state/metadata/backlog/archive and
+writes nothing; the archived answer path prints its outcome without mutating the
+live backlog or archive.
